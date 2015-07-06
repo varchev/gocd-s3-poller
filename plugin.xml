@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<go-plugin id="s3-poller" version="1">
+    <about>
+        <name>S3 Poller</name>
+        <version>1.0.0</version>
+        <target-go-version>14.4.0</target-go-version>
+        <description>Plugin that polls a S3 Bucket</description>
+        <vendor>
+            <name>Schibsted Products and Technology</name>
+            <url>www.schibsted.com</url>
+        </vendor>
+        <target-os>
+            <value>Linux</value>
+        </target-os>
+    </about>
+</go-plugin>
