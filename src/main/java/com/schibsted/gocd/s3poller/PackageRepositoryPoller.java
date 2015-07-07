@@ -1,14 +1,12 @@
 package com.schibsted.gocd.s3poller;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.schibsted.gocd.s3poller.message.CheckConnectionResultMessage;
 import com.schibsted.gocd.s3poller.message.PackageMaterialProperties;
 import com.schibsted.gocd.s3poller.message.PackageRevisionMessage;
 
-import java.util.Iterator;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -50,7 +48,7 @@ public class PackageRepositoryPoller {
                 CheckConnectionResultMessage.STATUS.FAILURE,
                 asList("Could not find path in bucket. [" + ex.getMessage() + "]"));
         }
-        if (listing != null && !listing.getObjectSummaries().isEmpty()) {
+        if (!listing.getObjectSummaries().isEmpty()) {
             return new CheckConnectionResultMessage(CheckConnectionResultMessage.STATUS.SUCCESS, asList("Objects found on path"));
         }
         return new CheckConnectionResultMessage(
@@ -59,13 +57,40 @@ public class PackageRepositoryPoller {
     }
 
     public PackageRevisionMessage getLatestRevision(PackageMaterialProperties packageConfiguration, PackageMaterialProperties repositoryConfiguration) {
-        // get latest modification here
-        return new PackageRevisionMessage();
+        String bucketName = repositoryConfiguration.getProperty(Constants.S3_BUCKET).value();
+        String path = packageConfiguration.getProperty(Constants.S3_PATH).value();
+        ObjectListing listing;
+        try {
+            listing = client.listObjects(bucketName, path);
+        } catch (Exception ex) {
+            return new PackageRevisionMessage();
+        }
+        List<S3ObjectSummary> s3Objects = listing.getObjectSummaries();
+        if (s3Objects.isEmpty()) {
+            return new PackageRevisionMessage();
+        }
+        S3ObjectSummary latest = s3Objects.get(0);
+        for (S3ObjectSummary s3Object : s3Objects) {
+            if (s3Object.getLastModified().after(latest.getLastModified())) {
+                latest = s3Object;
+            }
+        }
+        // String revision, Date timestamp, String user, String revisionComment, String trackbackUrl
+        return new PackageRevisionMessage(
+            latest.getKey(),
+            latest.getLastModified(),
+            latest.getOwner().getDisplayName(),
+            "Object at " + latest.getKey() + " with date " + latest.getLastModified().toString(),
+            client.getUrl(bucketName, latest.getKey()).toString()
+        );
     }
 
     public PackageRevisionMessage getLatestRevisionSince(PackageMaterialProperties packageConfiguration, PackageMaterialProperties repositoryConfiguration, PackageRevisionMessage previousPackageRevision) {
-        // get latest modification since here
-        return new PackageRevisionMessage();
+        PackageRevisionMessage prm = getLatestRevision(packageConfiguration, repositoryConfiguration);
+        if (prm.getTimestamp().after(previousPackageRevision.getTimestamp())) {
+            return prm;
+        }
+        return null;
 
     }
 }

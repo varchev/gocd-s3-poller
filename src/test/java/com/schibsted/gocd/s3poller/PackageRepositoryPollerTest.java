@@ -1,7 +1,7 @@
 package com.schibsted.gocd.s3poller;
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.Owner;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.schibsted.gocd.s3poller.message.*;
 
@@ -12,11 +12,13 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -118,10 +120,77 @@ public class PackageRepositoryPollerTest {
         assertFalse(ccrm.success());
     }
 
+    @Test
+    public void getLatestRevisionTest() throws MalformedURLException {
+
+        when(client.listObjects(anyString(), anyString()).getObjectSummaries()).thenReturn(
+            getObjectsInBucket(new Date(10000), new Date(50000), new Date(30000), new Date(20000))
+        );
+        when(client.getUrl(anyString(), anyString())).thenReturn(new URL("http://example.domain/path/to/file.zip"));
+        pmp.addPackageMaterialProperty(
+                Constants.S3_BUCKET,
+                new PackageMaterialProperty().withValue("bucket"));
+        pmp.addPackageMaterialProperty(
+                Constants.S3_PATH,
+                new PackageMaterialProperty().withValue("path"));
+        PackageRevisionMessage prm = prp.getLatestRevision(pmp, pmp);
+        assertEquals(new Date(50000), prm.getTimestamp());
+    }
+
+    @Test
+    public void getLatestRevisionSinceWithNewFileTest() throws MalformedURLException {
+
+        when(client.listObjects(anyString(), anyString()).getObjectSummaries()).thenReturn(
+                getObjectsInBucket(new Date(10000), new Date(50000), new Date(30000), new Date(20000))
+        );
+        when(client.getUrl(anyString(), anyString())).thenReturn(new URL("http://example.domain/path/to/file.zip"));
+        pmp.addPackageMaterialProperty(
+                Constants.S3_BUCKET,
+                new PackageMaterialProperty().withValue("bucket"));
+        pmp.addPackageMaterialProperty(
+                Constants.S3_PATH,
+                new PackageMaterialProperty().withValue("path"));
+        // String revision, Date timestamp, String user, String revisionComment, String trackbackUrl
+        PackageRevisionMessage prevPrm = new PackageRevisionMessage("1", new Date(40000), "username", "comment", "url");
+        PackageRevisionMessage prm = prp.getLatestRevisionSince(pmp, pmp, prevPrm);
+        assertEquals(new Date(50000), prm.getTimestamp());
+    }
+
+    @Test
+    public void getLatestRevisionSinceWithNoNewFileTest() throws MalformedURLException {
+
+        when(client.listObjects(anyString(), anyString()).getObjectSummaries()).thenReturn(
+                getObjectsInBucket(new Date(10000), new Date(50000), new Date(30000), new Date(20000))
+        );
+        when(client.getUrl(anyString(), anyString())).thenReturn(new URL("http://example.domain/path/to/file.zip"));
+        pmp.addPackageMaterialProperty(
+                Constants.S3_BUCKET,
+                new PackageMaterialProperty().withValue("bucket"));
+        pmp.addPackageMaterialProperty(
+                Constants.S3_PATH,
+                new PackageMaterialProperty().withValue("path"));
+        // String revision, Date timestamp, String user, String revisionComment, String trackbackUrl
+        PackageRevisionMessage prevPrm = new PackageRevisionMessage("1", new Date(50000), "username", "comment", "url");
+        PackageRevisionMessage prm = prp.getLatestRevisionSince(pmp, pmp, prevPrm);
+        assertNull(prm);
+    }
+
     private List<S3ObjectSummary> getObjectsInBucket(Integer count) {
         List<S3ObjectSummary> list = new ArrayList<S3ObjectSummary>();
         for (Integer i = 0; i < count; i++) {
             list.add(new S3ObjectSummary());
+        }
+        return list;
+    }
+
+    private List<S3ObjectSummary> getObjectsInBucket(Date... dates) {
+        List<S3ObjectSummary> list = new ArrayList<S3ObjectSummary>();
+        for (Date date : dates) {
+            S3ObjectSummary s3Object = new S3ObjectSummary();
+            s3Object.setKey("dummy-key");
+            s3Object.setLastModified(date);
+            s3Object.setOwner(new Owner("123", "username"));
+            list.add(s3Object);
         }
         return list;
     }
