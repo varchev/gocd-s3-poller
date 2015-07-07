@@ -18,7 +18,7 @@ Configure it as a Package material in the pipeline, by entering a path the plugi
 and there must be at least one file in that folder.
 
 The poller will trigger the pipeline when a file is added to the given bucket and folder.
-It only triggers in files, not folders.
+It only triggers on files, not folders.
 
 ## Todo
 * To get latest revision it cycles all files to get the one with the latest modified date. Problematic for buckets with many files.
