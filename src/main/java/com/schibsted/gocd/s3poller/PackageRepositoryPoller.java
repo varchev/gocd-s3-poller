@@ -1,9 +1,15 @@
 package com.schibsted.gocd.s3poller;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.schibsted.gocd.s3poller.message.CheckConnectionResultMessage;
 import com.schibsted.gocd.s3poller.message.PackageMaterialProperties;
 import com.schibsted.gocd.s3poller.message.PackageRevisionMessage;
+
+import java.util.Iterator;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 
@@ -12,18 +18,44 @@ public class PackageRepositoryPoller {
     private PackageRepositoryConfigurationProvider configurationProvider;
     private AmazonS3Client client;
 
-    public PackageRepositoryPoller(PackageRepositoryConfigurationProvider configurationProvider) {
+    public PackageRepositoryPoller(PackageRepositoryConfigurationProvider configurationProvider, AmazonS3Client client) {
         this.configurationProvider = configurationProvider;
+        this.client = client;
     }
 
     public CheckConnectionResultMessage checkConnectionToRepository(PackageMaterialProperties repositoryConfiguration) {
-        // check repository connection here
-        return new CheckConnectionResultMessage(CheckConnectionResultMessage.STATUS.SUCCESS, asList("success message"));
+        String bucketName = repositoryConfiguration.getProperty(Constants.S3_BUCKET).value();
+        Boolean bucketExists = false;
+        try {
+            bucketExists = client.doesBucketExist(bucketName);
+        } catch (Exception ex) {
+            return new CheckConnectionResultMessage(
+                CheckConnectionResultMessage.STATUS.FAILURE,
+                asList("Could not find bucket. [" + ex.getMessage() + "]"));
+        }
+        if (bucketExists) {
+            return new CheckConnectionResultMessage(CheckConnectionResultMessage.STATUS.SUCCESS, asList("Bucket found"));
+        }
+        return new CheckConnectionResultMessage(CheckConnectionResultMessage.STATUS.FAILURE, asList("Bucket not found"));
     }
 
     public CheckConnectionResultMessage checkConnectionToPackage(PackageMaterialProperties packageConfiguration, PackageMaterialProperties repositoryConfiguration) {
-        // check package connection here
-        return new CheckConnectionResultMessage(CheckConnectionResultMessage.STATUS.SUCCESS, asList("success message"));
+        String bucketName = repositoryConfiguration.getProperty(Constants.S3_BUCKET).value();
+        String path = packageConfiguration.getProperty(Constants.S3_PATH).value();
+        ObjectListing listing;
+        try {
+            listing = client.listObjects(bucketName, path);
+        } catch (Exception ex) {
+            return new CheckConnectionResultMessage(
+                CheckConnectionResultMessage.STATUS.FAILURE,
+                asList("Could not find path in bucket. [" + ex.getMessage() + "]"));
+        }
+        if (listing != null && !listing.getObjectSummaries().isEmpty()) {
+            return new CheckConnectionResultMessage(CheckConnectionResultMessage.STATUS.SUCCESS, asList("Objects found on path"));
+        }
+        return new CheckConnectionResultMessage(
+            CheckConnectionResultMessage.STATUS.FAILURE,
+            asList("Could not find objects in path. Folder can't be empty."));
     }
 
     public PackageRevisionMessage getLatestRevision(PackageMaterialProperties packageConfiguration, PackageMaterialProperties repositoryConfiguration) {

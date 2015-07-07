@@ -1,5 +1,6 @@
 package com.schibsted.gocd.s3poller;
 
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.schibsted.gocd.s3poller.message.*;
 import com.thoughtworks.go.plugin.api.AbstractGoPlugin;
 import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
@@ -35,7 +36,7 @@ public class PackageRepositoryMaterial extends AbstractGoPlugin {
 
     public PackageRepositoryMaterial() {
         configurationProvider = new PackageRepositoryConfigurationProvider();
-        packageRepositoryPoller = new PackageRepositoryPoller(configurationProvider);
+        packageRepositoryPoller = new PackageRepositoryPoller(configurationProvider, new AmazonS3Client());
         handlerMap.put(REQUEST_REPOSITORY_CONFIGURATION, repositoryConfigurationsMessageHandler());
         handlerMap.put(REQUEST_PACKAGE_CONFIGURATION, packageConfigurationMessageHandler());
         handlerMap.put(REQUEST_VALIDATE_REPOSITORY_CONFIGURATION, validateRepositoryConfigurationMessageHandler());
