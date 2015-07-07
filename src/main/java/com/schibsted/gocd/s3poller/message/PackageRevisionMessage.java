@@ -23,7 +23,6 @@ public class PackageRevisionMessage {
     @Expose
     private String trackbackUrl;
 
-    @Expose
     private Map<String, String> data = new HashMap<String, String>();
 
     public PackageRevisionMessage() {

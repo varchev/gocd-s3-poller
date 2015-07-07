@@ -46,7 +46,7 @@ public class PackageRepositoryPoller {
         } catch (Exception ex) {
             return new CheckConnectionResultMessage(
                 CheckConnectionResultMessage.STATUS.FAILURE,
-                asList("Could not find path in bucket. [" + ex.getMessage() + "]"));
+                asList("Could not find path '" + path + "' in bucket '" + bucketName + "'. [" + ex.getMessage() + "]"));
         }
         if (!listing.getObjectSummaries().isEmpty()) {
             return new CheckConnectionResultMessage(CheckConnectionResultMessage.STATUS.SUCCESS, asList("Objects found on path"));
