@@ -5,10 +5,12 @@ import com.schibsted.gocd.s3poller.message.*;
 import com.thoughtworks.go.plugin.api.AbstractGoPlugin;
 import com.thoughtworks.go.plugin.api.GoPluginIdentifier;
 import com.thoughtworks.go.plugin.api.annotation.Extension;
+import com.thoughtworks.go.plugin.api.logging.Logger;
 import com.thoughtworks.go.plugin.api.request.GoPluginApiRequest;
 import com.thoughtworks.go.plugin.api.response.DefaultGoPluginApiResponse;
 import com.thoughtworks.go.plugin.api.response.GoPluginApiResponse;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -33,6 +35,7 @@ public class PackageRepositoryMaterial extends AbstractGoPlugin {
     private Map<String, MessageHandler> handlerMap = new LinkedHashMap<String, MessageHandler>();
     private PackageRepositoryConfigurationProvider configurationProvider;
     private final PackageRepositoryPoller packageRepositoryPoller;
+    private final Logger log = Logger.getLoggerFor(this.getClass());
 
     public PackageRepositoryMaterial() {
         configurationProvider = new PackageRepositoryConfigurationProvider();
@@ -51,11 +54,16 @@ public class PackageRepositoryMaterial extends AbstractGoPlugin {
     @Override
     public GoPluginApiResponse handle(GoPluginApiRequest goPluginApiRequest) {
         try {
+            log.debug("Incoming request::: Name: " + goPluginApiRequest.requestName() + ", Body: " + goPluginApiRequest.requestBody());
             if (handlerMap.containsKey(goPluginApiRequest.requestName())) {
-                return handlerMap.get(goPluginApiRequest.requestName()).handle(goPluginApiRequest);
+                GoPluginApiResponse response = handlerMap.get(goPluginApiRequest.requestName()).handle(goPluginApiRequest);
+                log.debug("Request handled::: Code: " + response.responseCode() + ", Body: " + response.responseBody());
+                return response;
             }
             return DefaultGoPluginApiResponse.badRequest(String.format("Invalid request name %s", goPluginApiRequest.requestName()));
         } catch (Throwable e) {
+            log.error(e.toString());
+            log.error(Arrays.asList(e.getStackTrace()).toString());
             return DefaultGoPluginApiResponse.error(e.getMessage());
         }
     }

@@ -79,7 +79,7 @@ public class PackageRepositoryPoller {
         return new PackageRevisionMessage(
             latest.getKey(),
             latest.getLastModified(),
-            latest.getOwner().getDisplayName(),
+            "S3",
             "Object at " + latest.getKey() + " with date " + latest.getLastModified().toString(),
             client.getUrl(bucketName, latest.getKey()).toString()
         );
