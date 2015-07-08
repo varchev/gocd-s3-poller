@@ -7,6 +7,7 @@ import com.schibsted.gocd.s3poller.message.CheckConnectionResultMessage;
 import com.schibsted.gocd.s3poller.message.PackageMaterialProperties;
 import com.schibsted.gocd.s3poller.message.PackageRevisionMessage;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -75,9 +76,10 @@ public class PackageRepositoryPoller {
                 latest = s3Object;
             }
         }
+        String modifiedDate = new SimpleDateFormat("yyyyMMdd'T'HHmmss").format(latest.getLastModified());
         // String revision, Date timestamp, String user, String revisionComment, String trackbackUrl
         return new PackageRevisionMessage(
-            latest.getKey(),
+            latest.getKey() + '-' + modifiedDate,
             latest.getLastModified(),
             "S3",
             "Object at " + latest.getKey() + " with date " + latest.getLastModified().toString(),
