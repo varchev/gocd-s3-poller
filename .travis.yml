@@ -2,3 +2,11 @@ language: java
 jdk:
 - oraclejdk7
 script: mvn verify
+sudo: false
+deploy:
+  provider: releases
+  api_key:
+    secure: EGoPcYQCq+G62ZQxkp826RoxlLxiXTh/MX5C1M5D0sJ5aS+QpoHth0uPPfhhumuI8ExLTKf9boFmW63g7TeHVVkJamkjJIsXP8R/DDae0SkT8R8fZMmVWN2PqbmHfMcCsdq3xfs2//D9rBEz+f4dY7NgcZi5zVyhQeU4I8/RypH5/Iih9Fo7YEYyU7OB7mUfQ9nUWEYRbnWzgpgxDOYxPGuFCSHcHrW227uxrEaC+CB6zkqDBVkH+fVoEQPnYxHk2eL43J+W4i6Fw7opIbt+o5uuRwksNZwyv1MhLQcSe9QG7TNZNyut+ckOqd1AqUfWb1VVope0XBALxdFcTjpJGMLD3MZotuZgGBDddUpa3Cv6BRD69f82iIRlvfRtN8i1yxFs2GBSCtqysBuQGOKsfyD6WIIzCkfew9NafHDZESgPVPsq33BpPU5SOgMpUw60IKr6vL+GEnYtwM8hr1qPy40fQK3d7letmbaKLA2uapS54ucxxNtlfLy5zJI5IvqrvrqgPuCnBFFKUNsOnsCgxW1/tew/5CUynVIPVmNkGxezvLC24Jm/DjgB3LvprYIVqAKSZDyfDQyxWoe7Wqb/6h9Whd+MB2nF6inC2D/k1Niu5GpRjGdcpbRmtsj1aXsS42MXkLrIij/ZVtdur4+H/hdxN/3MF3uKuEYXKHt28KE=
+  file: 'target/gocd-s3-poller.jar'
+  on:
+    repo: varchev/gocd-s3-poller
